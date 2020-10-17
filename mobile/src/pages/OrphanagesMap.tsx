@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 import { StyleSheet, Text, View, Dimensions } from 'react-native';
 import { RectButton } from 'react-native-gesture-handler';
@@ -8,60 +8,82 @@ import MapView, { Marker, Callout, PROVIDER_GOOGLE } from 'react-native-maps';
 
 import { Feather } from '@expo/vector-icons';
 
+import api from '../services/api';
+
 import mapMarker from '../images/map-marker.png';
 
+interface Orphanage {
+  id: number;
+  name: string;
+  latitude: number;
+  longitude: number;
 
+}
 
 export default function OrphanagesMap() {
-    const navigation = useNavigation()
+  const navigation = useNavigation();
 
-    function handleNavigateToCreateOrphanage() {
-      navigation.navigate('SelectMapPosition')
-    }
+  const [orphanages, setOrphanages] = useState<Orphanage[]>([]);
 
-    function handleNavigateToOrphanageDetails() {
-        navigation.navigate('OrphanageDetails')
-    }
+  useEffect(() => {
+    api.get('orphanages').then(response => {
+      setOrphanages(response.data);
+    });
 
-    return (
-        <View style={styles.container}>
-            <MapView 
-                provider={PROVIDER_GOOGLE}
-                style={styles.map} 
-                initialRegion={{
-                  latitude: -21.128524, 
-                  longitude: -48.9754272,
-                  latitudeDelta: 0.008,
-                  longitudeDelta: 0.008,
-                }} 
-            >
-                <Marker
+  },[]);
+
+  function handleNavigateToCreateOrphanage() {
+    navigation.navigate('SelectMapPosition');
+  }
+
+  function handleNavigateToOrphanageDetails(id: number) {
+      navigation.navigate('OrphanageDetails', { id });
+  }
+
+  return (
+      <View style={styles.container}>
+          <MapView 
+              provider={PROVIDER_GOOGLE}
+              style={styles.map} 
+              initialRegion={{
+                latitude: -21.128524, 
+                longitude: -48.9754272,
+                latitudeDelta: 0.008,
+                longitudeDelta: 0.008,
+              }} 
+          >
+              {orphanages.map(orphanage => {
+                return (
+                  <Marker
+                  key={orphanage.id}
                     icon={mapMarker}
                     calloutAnchor={{
                         x: 2.7,
                         y: 0.8,
                     }}
                     coordinate={{
-                        latitude: -21.128524, 
-                        longitude: -48.9754272,
+                        latitude: orphanage.latitude, 
+                        longitude: orphanage.longitude,
                     }}
-                    >
-                        <Callout tooltip onPress={handleNavigateToOrphanageDetails}>
-                            <View style={styles.calloutContainer}>
-                                <Text style={styles.calloutText}>Lar das meninas</Text>
-                            </View>
-                        </Callout>
-                </Marker>
-            </MapView>
+                  >
+                    <Callout tooltip onPress={() => handleNavigateToOrphanageDetails(orphanage.id)}>
+                        <View style={styles.calloutContainer}>
+                            <Text style={styles.calloutText}>{orphanage.name}</Text>
+                        </View>
+                    </Callout>
+                  </Marker>
+                )
+              })}
+          </MapView>
 
-            <View style={styles.footer}>
-                <Text style={styles.footerText}>2 orfanatos encontrados</Text>
+          <View style={styles.footer}>
+              <Text style={styles.footerText}>{orphanages.length} orfanatos encontrados</Text>
 
-                <RectButton style={styles.createOrphanageButton} onPress={handleNavigateToCreateOrphanage}>
-                    <Feather name="plus" size={20} color="#FFF" />
-                </RectButton>
-            </View>
-        </View>
+              <RectButton style={styles.createOrphanageButton} onPress={handleNavigateToCreateOrphanage}>
+                  <Feather name="plus" size={20} color="#FFF" />
+              </RectButton>
+          </View>
+      </View>
 
     );   
 }
